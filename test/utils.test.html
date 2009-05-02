@@ -1,0 +1,74 @@
+<html>
+	<head>
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+		<title>utils.test</title>
+		<script src="../lib/jquery/jquery-1.3.1.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="testrunner.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/utils.js" type="text/javascript" charset="utf-8"></script>
+		<link rel="stylesheet" href="testsuite.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	</head>
+	<body id="utils.test">
+		<script type="text/javascript" charset="utf-8">
+			$(document).ready(function() {
+				module('util tests');
+				
+				test('verify namespaces', function() {
+					ok(typeof(window.utils) !== 'undefined', 'window.util should exist');
+				})
+				
+				test('rand range inclusive', function() {
+					// test the random number generator to ensure that we are really in the range
+					// we ask for
+					var inRange = true;
+					for (var i=0; i < 100; i++) {
+						var randomNumber = utils.rand(3, 6);
+						inRange = inRange && (3 <= randomNumber < 6);
+					};
+					ok(inRange, 'should be in range 3 - 5');
+				});
+				
+				test('rand range distribution', function() {
+					// should have spread across whole range
+					var results = {};
+					for (var i=0; i < 1000; i++) {
+						var randomNumber = utils.rand(3, 6);
+						if (results['' + randomNumber]) {
+							results['' + randomNumber] = results['' + randomNumber] + 1;
+						}
+						else {
+							results['' + randomNumber] = 1;
+						}
+					};
+					
+					expect(6);
+					for (var val in results) {
+						ok(3 <= val < 6, 'should be in range 3 to 5');
+						ok(val, 'should not be null');
+					}
+				});
+				
+				test('rand range when same', function() {
+					ok(utils.rand(5, 5) === 5, 'should be 5 for range in [5, 5]');
+				});
+
+				// can't test consoleFix since we can't delete console for test!
+				// test('console fix', function() {
+				// 	ok(typeof(utils.consoleFix) === 'function', 'is function');
+				// 	if (typeof(console) !== 'undefined') {
+				// 		ok(true, 'console found');
+				// 		delete console;
+				// 		ok(typeof(console) === 'undefined', 'console deleted');
+				// 		utils.consoleFix();
+				// 		ok(typeof(console) !== 'undefined', 'console is defined now');
+				// 		ok(typeof(console.log) === 'function', 'console.log defined');
+				// 	};
+				// });
+			});
+		</script>
+		<h1>Utils Test</h1>
+        <h2 id="banner"></h2>
+        <ol id="tests"></ol>
+        <div id="results"></div>
+        <div id="main"></div>
+	</body>
+</html>

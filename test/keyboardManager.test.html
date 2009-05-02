@@ -1,0 +1,111 @@
+<html>
+	<head>
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+		<title>keyboardManager</title>
+		<script src="../lib/jquery/jquery-1.3.1.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/keyboardManager.js" type="text/javascript" charset="utf-8"></script>
+		<script src="testrunner.js" type="text/javascript" charset="utf-8"></script>
+		<link rel="stylesheet" href="testsuite.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	</head>
+	<body id="keyboardManager">
+		<script type="text/javascript" charset="utf-8">
+			$(document).ready(function() {
+				module('keyboard manager');
+				
+				test('namespaces', function() {
+					ok(typeof(keyboardManager) === 'function', 'keyboardManager defined');
+				});
+				
+				test('subscribe to body for keypress', function() {
+					var keyMan = new keyboardManager();
+					// replace dispatch function to prove event is firing
+					var dispatchCalled = false;
+					keyMan.dispatch = function() {
+						dispatchCalled = true;
+					}
+					// no event propogation... best we can do!
+					$('body').keydown();
+					ok(dispatchCalled, 'dispatch was called');
+				});
+				
+				test('latch and unlatch', function() {
+					var keyMan = new keyboardManager();
+					// replace dispatch function to prove event is not firing when unlatched
+					var dispatchCalled = false;
+					keyMan.dispatch = function() {
+						dispatchCalled = true;
+					}
+					keyMan.unlatch();
+					// no event propogation... best we can do!
+					$('body').keydown();
+					ok(!dispatchCalled, 'dispatch was not called when we were unlatched');
+					keyMan.latch();
+					$('body').keydown();
+					ok(dispatchCalled, 'dispatch was called after latching');
+					
+				});
+
+				test('bind and unbind', function() {
+					var keyMan = new keyboardManager();
+					ok(typeof(keyMan.keyMap) !== 'undefined', 'keyMap exists on keyboard manager');
+					ok(typeof(keyMan.bind) === 'function', 'bind exists on key man');
+					ok(typeof(keyMan.unbind) === 'function', 'unbind exists on key man');
+					
+					ok(typeof(keyMan.keyMap['w']) === 'undefined', 'handler not registered');
+					keyMan.bind('w', function() { });
+					ok(typeof(keyMan.keyMap['w']) === 'function', 'handler registered');
+					keyMan.unbind('w');
+					ok(typeof(keyMan.keyMap['w']) === 'undefined', 'handler not registered');
+				});
+				
+				test('case insensitivity', function() {
+					var keyMan = new keyboardManager();
+					var called = false;
+					keyMan.bind('w', function() {
+						called = true;
+					});
+					keyMan.dispatch({
+						'charCode': 119 // 'w'
+					});
+					ok(called, 'should have been called for lowercase w');
+					called = false;
+					keyMan.dispatch({
+						'charCode': 87 // 'W'
+					});
+					ok(called, 'should have been called for uppercase W');
+					called = false;
+					keyMan.bind('1', function() {
+						called = true;
+					})
+					keyMan.dispatch({
+						'charCode': 49 // '1'
+					});
+					ok(called, 'should have been called for 1');
+					called = false;
+					keyMan.dispatch({
+						'charCode': 33 // '!'
+					});
+					ok(!called, 'should not have been called for !');
+					called = false;
+					keyMan.bind('X', function() {
+						called = true;
+					})
+					keyMan.dispatch({
+						'charCode': 88 // 'X'
+					});
+					ok(called, 'called for X');
+					called = false;
+					keyMan.dispatch({
+						'charCode': 120 // 'x'
+					});
+					ok(called, 'called for x');
+				});
+			});
+		</script>
+		<h1>keyboardManager Test</h1>
+        <h2 id="banner"></h2>
+        <ol id="tests"></ol>
+        <div id="results"></div>
+        <div id="main"></div>
+	</body>
+</html>

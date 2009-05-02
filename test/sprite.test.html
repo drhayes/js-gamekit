@@ -1,0 +1,70 @@
+<html>
+	<head>
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+		<title>sprite</title>
+		<script src="../lib/jquery/jquery-1.3.1.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="testrunner.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/point.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/sprite.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/eventer.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/walls.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/directions.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/map.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/actions.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/map.room.active.js" type="text/javascript" charset="utf-8"></script>
+		<link rel="stylesheet" href="testsuite.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	</head>
+	<body id="sprite">
+		<script type="text/javascript" charset="utf-8">
+			$(document).ready(function() {
+				module('sprite');
+				
+				test('namespaces', function() {
+					ok(typeof(window.sprite) !== 'undefined', 'window.sprite');
+				});
+				
+				test('ctor', function() {
+					var canvasElem = $('#testCanvas')[0];
+					console.log('before');
+					var active = new map.room.active();
+					console.log('after');
+					try {
+						new sprite(null, canvasElem);
+						ok(false, 'null active');
+					}
+					catch (error) {
+						ok(true, 'null active');
+					}
+					try {
+						new sprite(active, null);
+						ok(false, 'null canvas');
+					}
+					catch (error) {
+						ok(true, 'null canvas');
+					}
+					try {
+						new sprite(active, $('#banner')[0]);
+						ok(false, 'must be canvas');
+					}
+					catch (error) {
+						ok(true, 'must be canvas');
+					}
+					var sprite1 = new sprite(active, canvasElem);
+					ok(sprite1.active === active, 'active');
+					ok(sprite1.canvasElem === canvasElem, 'canvasElem');
+					ok(sprite1.canvasWidth === 20, 'canvasWidth');
+					ok(sprite1.canvasHeight === 10, 'canvasHeight');
+					ok(typeof(sprite1.draw) === 'function', 'draw is a function');
+				});
+			});
+		</script>
+		<h1>sprite Test</h1>
+        <h2 id="banner"></h2>
+        <ol id="tests"></ol>
+        <div id="results"></div>
+        <div id="main"></div>
+		<div id="canvases">
+			<canvas id="testCanvas" width="20" height="10"></canvas>
+		</div>
+	</body>
+</html>

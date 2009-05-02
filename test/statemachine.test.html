@@ -1,0 +1,406 @@
+<html>
+	<head>
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+		<title>statemachine</title>
+		<script src="../lib/jquery/jquery-1.3.1.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/statemachine.js" type="text/javascript" charset="utf-8"></script>
+		<script src="testrunner.js" type="text/javascript" charset="utf-8"></script>
+		<link rel="stylesheet" href="testsuite.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	</head>
+	<body id="statemachine">
+		<script type="text/javascript" charset="utf-8">
+			$(document).ready(function() {
+				
+				module('update result');
+				
+				test('basics', function() {
+					ok(typeof(window.updateResult) === 'function', 'updateResult is defined');
+				});
+				
+				test('ctor with defaults', function() {
+					var result = new updateResult();
+					ok(result.actions.length === 0, 'actions is empty');
+					ok(result.transition === null, 'transition is null');
+					ok(result.level === 0, 'level is 0');
+				});
+				
+				test('ctor property validation', function() {
+					var action1 = {};
+					var action2 = {};
+					var trans = new transition();
+					var result = new updateResult({
+						actions: [action1, action2],
+						transition: trans,
+						level: 3
+					});
+					ok(result.actions.length === 2 && result.actions[0] === action1 && result.actions[1] === action2, 'actions');
+					ok(result.transition === trans, 'transition');
+					ok(result.level === 3, 'level');
+				});
+				
+				module('transition');
+				
+				test('basics', function() {
+					ok(typeof(window.transition) === 'function', 'transition is defined');
+				});
+				
+				test('ctor defaults', function() {
+					var trans = new transition();
+					ok(trans.level === 0, 'level default');
+					ok(typeof(trans.triggered) === 'function' && trans.triggered() === false, 'triggered default');
+					ok(typeof(trans.actions) !== 'undefined' && trans.actions.length === 0, 'actions default');
+					ok(trans.targetState === null, 'targetState default');
+				});
+				
+				test('ctor property validation', function() {
+					// action objects used for testing
+					var action1 = {};
+					var action2 = {};
+					// trigger for testing
+					var beenTriggered = false;
+					var trigger = function() {
+						beenTriggered = true;
+					}
+					// target state for testing
+					var targetState = {};
+					
+					var trans1 = new transition({
+						'level': -1,
+						'triggered': trigger,
+						'actions': [action1, action2],
+						'targetState': targetState
+					});
+					ok(trans1.level === -1, 'level');
+					ok(trans1.triggered === trigger, 'trigger');
+					trans1.triggered();
+					ok(beenTriggered === true, 'beenTriggered called... same function');
+					ok(trans1.actions.length === 2, 'actions.length === 2');
+					ok(trans1.actions[0] === action1, 'actions[0]');
+					ok(trans1.actions[1] === action2, 'actions[1]');
+					ok(trans1.targetState === targetState, 'targetState');
+				});
+
+				module('state');
+				
+				test('basics', function() {
+					ok(typeof(state) === 'function', 'state is defined');
+				});
+				
+				test('ctor defaults', function() {
+					var state1 = new state();
+					var resultStates = state1.getStates();
+					ok(resultStates.length === 1 && resultStates[0] === state1, 'returns itself for getStates() call');
+					ok(state1.actions.length === 0, 'actions is empty');
+					ok(state1.entryActions.length === 0, 'entryActions is empty');
+					ok(state1.exitActions.length === 0, 'exitActions is empty');
+					ok(state1.transitions.length === 0, 'transitions is empty');
+					var updateResult = state1.update();
+					ok(updateResult.actions.length === 0, 'updateResult.actions.length');
+					ok(updateResult.transition === null, 'updateResult.transition');
+					ok(updateResult.level === 0, 'updateResult.level');
+				});
+				
+				test('ctor property validation', function() {
+					// action objects used for testing
+					var action1 = {};
+					var action2 = {};
+					var action3 = {};
+					var trans1 = new transition();
+					
+					var state1 = new state({
+						'states': ['one', 'two', 'three'], // should be ignored
+						'actions': [action1],
+						'entryActions': [action2],
+						'exitActions': [action3],
+						'transitions': [trans1]
+					});
+					var resultStates = state1.getStates();
+					ok(resultStates.length === 1 && resultStates[0] === state1, 'returns itself for getStates() call');
+					ok(state1.actions.length === 1 && state1.actions[0] === action1, 'actions');
+					ok(state1.entryActions.length === 1 && state1.entryActions[0] === action2, 'entryActions');
+					ok(state1.exitActions.length === 1 && state1.exitActions[0] === action3, 'exitActions');
+					ok(state1.transitions.length === 1 && state1.transitions[0] === trans1, 'transitions');
+					var updateResult = state1.update();
+					ok(updateResult.actions.length === 1 && updateResult.actions[0] === action1, 'updateResult.actions');
+					ok(updateResult.transition === null, 'updateResult.transition');
+					ok(updateResult.level === 0, 'updateResult.level');
+				});
+				
+				test('update calls passed-in update function', function() {
+					var dummyAction = {};
+					var dummyTransition = {};
+					var updaterCalled = false;
+					var state1 = new state({
+						'updater': function() {
+							updaterCalled = true;
+							return new updateResult({
+								'actions': [dummyAction],
+								'transition': dummyTransition
+							});
+						}
+					});
+					ok(!updaterCalled, 'updater not called yet');
+					var result = state1.update();
+					ok(updaterCalled, 'updater has been called');
+					ok(result.actions.length === 1, 'updateResult.actions.length is 1');
+					ok(result.actions[0] === dummyAction, 'context of updater is state');
+					ok(result.transition === dummyTransition, 'transition');
+				});
+
+				module('hierarchical state machine');
+				
+				test('basics', function() {
+					ok(typeof(hierarchicalStateMachine) === 'function', 'hierarchicalStateMachine defined');
+				});
+				
+				test('ctor basics', function() {
+					var hsm = new hierarchicalStateMachine();
+					ok(hsm.getStates().length === 1, 'states is not empty');
+					ok(hsm.initialState !== null, 'initialState is not null');
+					ok(hsm.currentState !== null, 'currentState is not null');
+					ok(hsm.actions.length === 0, 'actions is empty');
+					hsm.currentState = null;
+					var getStatesResults = hsm.getStates();
+					ok(getStatesResults.length === 0, 'getStates() returns empty array when no current state');
+				});
+				
+				test('ctor with states and getStates', function() {
+					var state1 = new state();
+					var state2 = new state();
+					var hsm = new hierarchicalStateMachine({
+						states: [state1, state2]
+					})
+					ok(hsm.states.length === 2 && hsm.states[0] === state1 && hsm.states[1] === state2, 'states');
+					ok(hsm.initialState === state1, 'initialState is states[0] when not passed in');
+					ok(hsm.currentState === state1, 'currentState is set to initial state');
+					var resultStates = hsm.getStates();
+					ok(resultStates.length === 1 && resultStates[0] === state1, 'returns current state getStates() results');
+					
+					hsm = new hierarchicalStateMachine({
+						states: [state1, state2],
+						initialState: state2
+					})
+					ok(hsm.initialState === state2, 'initial state should be set explicitly');
+					ok(hsm.currentState === state2, 'currentState is set to initialState');
+					ok(hsm.states[0].parentStateMachine === hsm, 'states[0] parent is set correctly');
+					ok(hsm.states[1].parentStateMachine === hsm, 'states[1] parent is set correctly');
+					resultStates = hsm.getStates();
+					ok(resultStates.length === 1 && resultStates[0] === state2, 'returns current state getStates() results');
+					
+					state1.parentStateMachine = null;
+					state2.parentStateMachine = null;
+					hsm = new hierarchicalStateMachine();
+					hsm.addStates([state1, state2]);
+					ok(state1.parentStateMachine === hsm, 'state1 has parent hsm after adding');
+					ok(state2.parentStateMachine === hsm, 'state2 has parent hsm after adding');
+				});
+
+				test('update with single state and current state is null', function() {
+					var action1 = {};
+					var state1 = new state({
+						entryActions: [action1]
+					});
+					var hsm = new hierarchicalStateMachine({
+						states: [state1]
+					});
+					// set currentState to null to prove this path
+					hsm.currentState = null;
+					// quick check of getStates
+					var getStatesResult = hsm.getStates();
+					ok(getStatesResult.length === 0, 'getStates() returns empty array with no current state');
+					var result = hsm.update();
+					ok(result.length === 1 && result[0] === action1, 'should have been returned as entryActions for state1');
+				});
+				
+				test('update with single state and current state with no transitions', function() {
+					var action1 = {};
+					var state1 = new state({
+						actions: [action1]
+					})
+					var hsm = new hierarchicalStateMachine({
+						states: [state1]
+					})
+					ok(hsm.initialState === state1, 'initialState is state1');
+					ok(hsm.currentState === state1, 'currentState is state1');
+					var updateResult = hsm.update();
+					ok(updateResult.actions.length === 1 && updateResult.actions[0] === action1, 'updateResult.actions');
+					ok(updateResult.transition === null, 'updateResult.transition');
+					ok(updateResult.level === 0, 'updateResult.level');
+				});
+				
+				test('update with two states, two transitions and state1 transitioning to state2', function() {
+					var exitState1Action = {};
+					var transition2Action1 = {};
+					var transition2Action2 = {};
+					var entryState2Action = {};
+					var state1 = new state({
+						exitActions: [exitState1Action]
+					});
+					var state2 = new state({
+						entryActions: [entryState2Action]
+					});
+					var trans1TriggeredCalled = false;
+					var trans2TriggeredCalled = false;
+					var trans1 = new transition({
+						triggered: function() { trans1TriggeredCalled = true; return false; }
+					});
+					// this transition triggers
+					var trans2 = new transition({
+						level: 0,
+						actions: [transition2Action1, transition2Action2],
+						targetState: state2,
+						triggered: function() { trans2TriggeredCalled = true; return true; }
+					});
+					state1.transitions = [trans1, trans2];
+					hsm = new hierarchicalStateMachine({
+						states: [state1, state2]
+					});
+					var updateResult = hsm.update();
+					ok(updateResult.actions.length === 4, 'updateResult.actions has 4 actions');
+					ok(updateResult.actions[0] === exitState1Action, 'first action is exit state 1 action');
+					ok(updateResult.actions[1] === transition2Action1, 'second action is transition action1');
+					ok(updateResult.actions[2] === transition2Action2, 'third action is transition action2');
+					ok(updateResult.actions[3] === entryState2Action, 'fourth action is entry state 2 action');
+					ok(updateResult.transition === null, 'updateResult.transition is nulled out by update processing');
+					ok(updateResult.level === 0, 'updateResult.level is 0 because of transition');
+					ok(trans1TriggeredCalled, 'transition1 triggered method was called');
+					ok(trans2TriggeredCalled, 'transition2 triggered method was called');
+				});
+				
+				test('update with single state transitioning with level > 0', function() {
+					var exitState1Action = {};
+					var transitionAction = {};
+					var state1 = new state({
+						exitActions: [exitState1Action]
+					});
+					var transition1 = new transition({
+						actions: [transitionAction],
+						level: 3,
+						triggered: function() { return true; }
+					});
+					state1.transitions = [transition1];
+					var hsm = new hierarchicalStateMachine({
+						states: [state1]
+					});
+					ok(hsm.currentState === state1, 'current state is state1');
+					var updateResult = hsm.update();
+					ok(updateResult.actions.length === 1 && updateResult.actions[0] === exitState1Action, 'updateResult.actions');
+					ok(updateResult.level === 2, 'updateResult.level should have decreased');
+					ok(hsm.currentState === null, 'hsm should have exited its current state');
+				});
+
+				module('sub machine state');
+				
+				test('basics', function() {
+					ok(typeof(subMachineState) === 'function', 'subMachineState defined');
+				});
+				
+				test('ctor with defaults', function() {
+					// state lookin' properties
+					var smState = new subMachineState();
+					ok(smState.actions.length === 0, 'actions is empty');
+					ok(smState.entryActions.length === 0, 'entryActions is empty');
+					ok(smState.exitActions.length === 0, 'exitActions is empty');
+					ok(smState.transitions.length === 0, 'transitions is empty');
+					ok(typeof(smState.update) === 'function', 'update is a function');
+					var updateResult = smState.update();
+					ok(updateResult.actions.length === 0, 'updateResult.actions.length');
+					ok(updateResult.transition === null, 'updateResult.transition');
+					ok(updateResult.level === 0, 'updateResult.level');
+					// hsm lookin' properties
+					ok(smState.initialState !== null, 'initialState is not null');
+					ok(smState.currentState !== null, 'currentState is not null');
+					ok(smState.actions.length === 0, 'actions is empty');
+					
+					var getStatesResults = smState.getStates();
+					ok(getStatesResults.length === 2, 'getStates() returns self and current state states when current state is not null');
+					smState.currentState = null;
+					getStatesResults = smState.getStates();
+					ok(getStatesResults.length === 1 , 'getStates() returns self and nothing else when current state is null');
+				});
+				
+				test('ctor property validation', function() {
+					var action1 = {};
+					var action2 = {};
+					var entryAction1 = {};
+					var exitAction1 = {};
+					var transition1 = new transition();
+					var state1 = new state();
+					var state2 = new state();
+					
+					var smState = new subMachineState({
+						actions: [action1, action2],
+						entryActions: [entryAction1],
+						exitActions: [exitAction1],
+						transitions: [transition1],
+						states: [state1, state2]
+					});
+					ok(smState.actions.length === 2 && smState.actions[0] === action1 && smState.actions[1] === action2, 'actions');
+					ok(smState.entryActions.length === 1 && smState.entryActions[0] === entryAction1, 'entryActions');
+					ok(smState.exitActions.length === 1 && smState.exitActions[0] === exitAction1, 'exitActions');
+					ok(smState.transitions.length === 1 && smState.transitions[0] === transition1, 'transitions');
+					ok(smState.states.length === 2 && smState.states[0] === state1 && smState.states[1] === state2, 'states');
+					ok(smState.initialState === state1, 'initialState');
+					ok(smState.currentState === state1, 'currentState');
+				});
+				
+				test('update with no transitions', function() {
+					var action1 = {};
+					var smState = new subMachineState({
+						actions: [action1], 
+					})
+					var updateResult = smState.update();
+					ok(updateResult.actions.length === 1 && updateResult.actions[0] === action1, 'returned only state action');
+					ok(updateResult.transition === null, 'no transition');
+					ok(updateResult.level === 0, 'level 0');
+				});
+				
+				test('update with three states with transition level < 0', function() {
+					// example taken from page 533
+					var mExitAction = { name: 'mExit' };
+					var cEntryAction = { name: 'cEntry' };
+					var lEntryAction = { name: 'lEntry' };
+					var transitionAction = { name: 'transition' };
+					var stateM = new state({
+						exitActions: [mExitAction]
+					});
+					stateM.name = 'stateM';
+					var stateL = new subMachineState({
+						entryActions: [lEntryAction]
+					});
+					stateL.name = 'stateL';
+					var stateC = new state({
+						entryActions: [cEntryAction]
+					});
+					stateC.name = 'stateC';
+					stateL.addStates([stateC]);
+					var transition2 = new transition({
+						level: -1,
+						triggered: function() { return true; },
+						actions: [transitionAction],
+						targetState: stateC
+					});
+					stateM.transitions = [transition2];
+					var hsm = new hierarchicalStateMachine({
+						states: [stateM, stateL],
+						initialState: stateM
+					});
+					var updateResult = hsm.update();
+					ok(updateResult.actions.length === 4, 'should be four actions');
+					$.each(updateResult.actions, function(index, action) {
+						console.log(action.name);
+					})
+					ok(updateResult.actions[0] === mExitAction, 'actions[0]');
+					ok(updateResult.actions[1] === lEntryAction, 'actions[1]');
+					ok(updateResult.actions[2] === cEntryAction, 'actions[2]');
+					ok(updateResult.actions[3] === transitionAction, 'actions[3]');
+				});
+			});
+		</script>
+		<h1>statemachine Test</h1>
+        <h2 id="banner"></h2>
+        <ol id="tests"></ol>
+        <div id="results"></div>
+        <div id="main"></div>
+	</body>
+</html>
