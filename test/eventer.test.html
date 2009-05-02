@@ -80,6 +80,20 @@
 					
 					eventer1.fire('blah');
 				});
+				
+				test('fire with args', function() {
+					var e = new eventer();
+					e.subscribe('one', function(args) {
+						ok(args.a === 'a', 'first arg');
+						ok(args.b === 'b', 'second arg');
+						ok(args.c === 'c', 'third arg');
+					})
+					e.fire('one', {
+						a: 'a',
+						b: 'b',
+						c: 'c'
+					})
+				});
 			});
 		</script>
 		<h1>eventer Test</h1>

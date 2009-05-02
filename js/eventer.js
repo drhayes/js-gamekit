@@ -19,7 +19,7 @@ var eventer = function() {
         subscribers[eventName] = callbacks;
     }
     
-    this.fire = function(eventName) {
+    this.fire = function(eventName, eventArg) {
         if (eventName === null) {
             throw new Error('eventName required');
         }
@@ -30,7 +30,7 @@ var eventer = function() {
         var callbacks = subscribers[eventName];
         if (callbacks !== null) {
             $.each(callbacks, function(index, callback) {
-                callback();
+                callback(eventArg);
             })
         }
     }
