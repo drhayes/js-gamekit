@@ -3,6 +3,7 @@
 		<meta http-equiv="Content-type" content="text/html; charset=utf-8">
 		<title>keyboardManager</title>
 		<script src="../lib/jquery/jquery-1.3.1.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/eventer.js" type="text/javascript" charset="utf-8"></script>
 		<script src="../js/keyboardManager.js" type="text/javascript" charset="utf-8"></script>
 		<script src="testrunner.js" type="text/javascript" charset="utf-8"></script>
 		<link rel="stylesheet" href="testsuite.css" type="text/css" media="screen" title="no title" charset="utf-8">
@@ -10,10 +11,13 @@
 	<body id="keyboardManager">
 		<script type="text/javascript" charset="utf-8">
 			$(document).ready(function() {
+				
 				module('keyboard manager');
 				
-				test('namespaces', function() {
-					ok(typeof(keyboardManager) === 'function', 'keyboardManager defined');
+				test('ctor', function() {
+					var keyman = new keyboardManager();
+					ok(typeof(keyman.eventer) === 'object', 'eventer field');
+					keyman.unlatch();
 				});
 				
 				test('subscribe to body for keypress', function() {
@@ -26,6 +30,7 @@
 					// no event propogation... best we can do!
 					$('body').keydown();
 					ok(dispatchCalled, 'dispatch was called');
+					keyMan.unlatch();
 				});
 				
 				test('latch and unlatch', function() {
@@ -42,63 +47,72 @@
 					keyMan.latch();
 					$('body').keydown();
 					ok(dispatchCalled, 'dispatch was called after latching');
-					
+					keyMan.unlatch();
 				});
 
-				test('bind and unbind', function() {
+				test('bind', function() {
 					var keyMan = new keyboardManager();
 					ok(typeof(keyMan.keyMap) !== 'undefined', 'keyMap exists on keyboard manager');
 					ok(typeof(keyMan.bind) === 'function', 'bind exists on key man');
-					ok(typeof(keyMan.unbind) === 'function', 'unbind exists on key man');
 					
-					ok(typeof(keyMan.keyMap['w']) === 'undefined', 'handler not registered');
-					keyMan.bind('w', function() { });
-					ok(typeof(keyMan.keyMap['w']) === 'function', 'handler registered');
-					keyMan.unbind('w');
-					ok(typeof(keyMan.keyMap['w']) === 'undefined', 'handler not registered');
-				});
-				
-				test('case insensitivity', function() {
-					var keyMan = new keyboardManager();
 					var called = false;
 					keyMan.bind('w', function() {
 						called = true;
 					});
 					keyMan.dispatch({
-						'charCode': 119 // 'w'
+						type: 'keypress',
+						charCode: 119 // w
 					});
-					ok(called, 'should have been called for lowercase w');
-					called = false;
-					keyMan.dispatch({
-						'charCode': 87 // 'W'
-					});
-					ok(called, 'should have been called for uppercase W');
+					ok(called, 'bound');
+					keyMan.unlatch();
+				});
+				
+				test('case', function() {
+					var keyMan = new keyboardManager();
+					var called = false;
 					called = false;
 					keyMan.bind('1', function() {
 						called = true;
 					})
 					keyMan.dispatch({
+						type: 'keypress',
 						'charCode': 49 // '1'
 					});
 					ok(called, 'should have been called for 1');
 					called = false;
 					keyMan.dispatch({
+						type: 'keypress',
 						'charCode': 33 // '!'
 					});
 					ok(!called, 'should not have been called for !');
 					called = false;
-					keyMan.bind('X', function() {
+					keyMan.bind('shift_x', function() {
 						called = true;
 					})
 					keyMan.dispatch({
+						type: 'keypress',
 						'charCode': 88 // 'X'
 					});
 					ok(called, 'called for X');
 					called = false;
 					keyMan.dispatch({
+						type: 'keypress',
 						'charCode': 120 // 'x'
 					});
-					ok(called, 'called for x');
+					ok(!called, 'not called for x');
+					keyMan.unlatch();
+				});
+				
+				test('spacebar', function() {
+					expect(1);
+					var keyman = new keyboardManager();
+					keyman.bind(' ', function() {
+						ok(true, 'spacebar called');
+					})
+					keyman.dispatch({
+						type: 'keypress',
+						'charCode': 32 // spacebar
+					});
 				});
 			});
 		</script>
