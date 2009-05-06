@@ -6,12 +6,6 @@
 		<script src="testrunner.js" type="text/javascript" charset="utf-8"></script>
 		<script src="../js/point.js" type="text/javascript" charset="utf-8"></script>
 		<script src="../js/sprite.js" type="text/javascript" charset="utf-8"></script>
-		<script src="../js/eventer.js" type="text/javascript" charset="utf-8"></script>
-		<script src="../js/walls.js" type="text/javascript" charset="utf-8"></script>
-		<script src="../js/directions.js" type="text/javascript" charset="utf-8"></script>
-		<script src="../js/map.js" type="text/javascript" charset="utf-8"></script>
-		<script src="../js/actions.js" type="text/javascript" charset="utf-8"></script>
-		<script src="../js/map.room.active.js" type="text/javascript" charset="utf-8"></script>
 		<link rel="stylesheet" href="testsuite.css" type="text/css" media="screen" title="no title" charset="utf-8">
 	</head>
 	<body id="sprite">
@@ -25,9 +19,8 @@
 				
 				test('ctor', function() {
 					var canvasElem = $('#testCanvas')[0];
-					console.log('before');
-					var active = new map.room.active();
-					console.log('after');
+					var active = {};
+					
 					try {
 						new sprite(null, canvasElem);
 						ok(false, 'null active');
