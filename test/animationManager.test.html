@@ -1,0 +1,169 @@
+<html>
+	<head>
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+		<title>animationManager</title>
+		<script src="../lib/jquery/jquery-1.3.1.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="testrunner.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/animationDefinition.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/animationManager.js" type="text/javascript" charset="utf-8"></script>
+		<link rel="stylesheet" href="testsuite.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	</head>
+	<body id="animationManager">
+		<script type="text/javascript" charset="utf-8">
+			$(document).ready(function() {
+				
+				var animDef = new animationDefinition();
+				animDef.path = '../assets/images/animation.png';
+				animDef.width = 64;
+				animDef.height = 64;
+				// has three frames of animation
+				animDef.addFrame();
+				animDef.addFrame();
+				animDef.addFrame();				
+				
+				module('animationManager');
+				
+				test('ctor', function() {
+					ok(typeof(animationManager) === 'function', 'exists');
+					try {
+						var am = new animationManager();
+						ok(false, 'requires global animation definition object');
+					}
+					catch (error) {
+						ok(true, 'requires global animation definition object');
+					}
+					try {
+						var am = new animationManager(null);
+						ok(false, 'animation definition object cannot be null');
+					}
+					catch (error) {
+						ok(true, 'animation definition object cannot be null');
+					}
+				});
+				
+				test('registerListener', function() {
+					var am = new animationManager({'anim': animDef});
+					ok(typeof(am.registerAnimation) === 'function', 'exists');
+					try {
+						am.registerAnimation();
+						ok(false, 'registerAnimation requires a definition id');
+					}
+					catch (error) {
+						ok(true, 'registerAnimation requires a definition id');
+					}
+					try {
+						am.registerAnimation(null);
+						ok(false, 'registerAnimation cannot accept a null for definition id');
+					}
+					catch (error) {
+						ok(true, 'registerAnimation cannot accept a null for definition id');
+					}
+					try {
+						am.registerAnimation('anim');
+						ok(false, 'registerAnimation requires an animation id');
+					}
+					catch (error) {
+						ok(true, 'registerAnimation requires an animation id');
+					}
+					try {
+						am.registerAnimation('anim', null);
+						ok(false, 'registerAnimation requires a non-null animation id');
+					}
+					catch (error) {
+						ok(true, 'registerAnimation requires a non-null animation id');
+					}
+					try {
+						am.registerAnimation('invalidanimationid', 'thing');
+						ok(false, 'must use definition id from initial definition');
+					}
+					catch (error) {
+						ok(true, 'must use definition id from initial definition');
+					}
+					am.registerAnimation('anim', 'thing');
+				});
+				
+				test('getFrame', function() {
+					var am = new animationManager({'anim': animDef });
+					ok(typeof(am.getFrame) === 'function', 'exists');
+					try {
+						am.getFrame();
+						ok(false, 'getFrame requires an id');
+					}
+					catch (error) {
+						ok(true, 'getFrame requires an id');
+					}
+					try {
+						am.getFrame(null);
+						ok(false, 'getFrame argument cannot be null');
+					}
+					catch (error) {
+						ok(true, 'getFrame argument cannot be null');
+					}
+					try {
+						am.getFrame('randomThing');
+						ok(false, 'unregistered id throws error');
+					}
+					catch (error) {
+						ok(true, 'unregistered id throws error');
+					}
+					am.registerAnimation('anim', 'anim1');
+					var firstFrame = am.getFrame('anim1');
+					ok(firstFrame.indexOf('background: transparent url(../assets/images/animation.png) 0px 0px no-repeat;') !== -1, 'first frame');
+					var secondFrame = am.getFrame('anim1');
+					ok(secondFrame.indexOf('background: transparent url(../assets/images/animation.png) -64px 0px no-repeat;') !== -1, 'second frame');
+					var thirdFrame = am.getFrame('anim1');
+					ok(thirdFrame.indexOf('background: transparent url(../assets/images/animation.png) -128px 0px no-repeat;') !== -1, 'third frame');
+					var fourthFrame = am.getFrame('anim1');
+					ok(firstFrame === fourthFrame, 'fourth frame loops back to first');
+				});
+				
+				test('getFrame arbitrary index', function() {
+					var arbitraryAnimDef = new animationDefinition();
+					arbitraryAnimDef.path = '../assets/images/blah.png';
+					arbitraryAnimDef.width = 32;
+					arbitraryAnimDef.height = 64;
+					arbitraryAnimDef.addFrame({ index: 2 });
+					arbitraryAnimDef.addFrame({ index: 1 });
+					arbitraryAnimDef.addFrame({ index: 0 });
+					var am = new animationManager({'anim': arbitraryAnimDef });
+					am.registerAnimation('anim', 'anim1');
+					var firstFrame = am.getFrame('anim1');
+					ok(firstFrame.indexOf('background: transparent url(../assets/images/blah.png) -64px 0px no-repeat;') !== -1, 'first frame');
+					var secondFrame = am.getFrame('anim1');
+					ok(secondFrame.indexOf('background: transparent url(../assets/images/blah.png) -32px 0px no-repeat;') !== -1, 'second frame');
+					var thirdFrame = am.getFrame('anim1');
+					ok(thirdFrame.indexOf('background: transparent url(../assets/images/blah.png) 0px 0px no-repeat;') !== -1, 'third frame');
+					var fourthFrame = am.getFrame('anim1');
+					ok(firstFrame === fourthFrame, 'fourth frame loops back to first');
+				});
+				
+				test('getFrame sit on frame interval number', function() {
+					var arbitraryAnimDef = new animationDefinition();
+					arbitraryAnimDef.path = '../assets/images/blah.png';
+					arbitraryAnimDef.width = 32;
+					arbitraryAnimDef.height = 64;
+					arbitraryAnimDef.addFrame({ index: 2 });
+					arbitraryAnimDef.addFrame({ index: 1, interval: 2 }); // sit on this frame for two updates
+					arbitraryAnimDef.addFrame({ index: 0 });
+					var am = new animationManager({'anim': arbitraryAnimDef });
+					am.registerAnimation('anim', 'anim1');
+					var firstFrame = am.getFrame('anim1');
+					ok(firstFrame.indexOf('background: transparent url(../assets/images/blah.png) -64px 0px no-repeat;') !== -1, 'first frame');
+					var secondFrame = am.getFrame('anim1');
+					ok(secondFrame.indexOf('background: transparent url(../assets/images/blah.png) -32px 0px no-repeat;') !== -1, 'second frame');
+					var thirdFrame = am.getFrame('anim1');
+					ok(thirdFrame.indexOf('background: transparent url(../assets/images/blah.png) -32px 0px no-repeat;') !== -1, 'third frame');
+					var fourthFrame = am.getFrame('anim1');
+					ok(fourthFrame.indexOf('background: transparent url(../assets/images/blah.png) 0px 0px no-repeat;') !== -1, 'fourth frame');
+					var fifthFrame = am.getFrame('anim1');
+					ok(firstFrame === fifthFrame, 'fifth frame loops back to first');
+				});
+			});
+		</script>
+		<h1>animationManager Test</h1>
+        <h2 id="banner"></h2>
+        <ol id="tests"></ol>
+        <div id="results"></div>
+        <div id="main"></div>
+	</body>
+</html>

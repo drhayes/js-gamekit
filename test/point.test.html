@@ -1,0 +1,174 @@
+<html>
+	<head>
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+		<title>point</title>
+		<script src="../lib/jquery/jquery-1.3.1.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/point.js" type="text/javascript" charset="utf-8"></script>
+		<script src="testrunner.js" type="text/javascript" charset="utf-8"></script>
+		<link rel="stylesheet" href="testsuite.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	</head>
+	<body id="point">
+		<script type="text/javascript" charset="utf-8">
+			$(document).ready(function() {
+				module('point');
+				
+				test('ctor', function() {
+					var pt = new point(3, 5);
+					ok(pt.x === 3, 'x property');
+					ok(pt.y === 5, 'y property');
+					ok(pt.pipX === 0, 'pipX property');
+					ok(pt.pipY === 0, 'pipY property');
+					
+					// invalid point object args
+					var invalidArgs = ['blah', null, NaN, Number('x')]
+					for (var i = 0; i < invalidArgs.length; i++) {
+						try {
+							var pt = new point(invalidArgs[i], 5);
+							ok(false, 'should have thrown on setting x to ' + invalidArgs[i]);
+						}
+						catch(err) {
+							ok(true, 'threw on setting x to ' + invalidArgs[i]);
+						}
+						try {
+							var pt = new point(3, invalidArgs[i]);
+							ok(false, 'should have thrown on setting y to ' + invalidArgs[i]);
+						}
+						catch(err) {
+							ok(true, 'threw on setting y to ' + invalidArgs[i]);
+						}
+					}
+					
+					pt = new point(1, 2, 3, 4);
+					ok(pt.x === 1, 'x is 1');
+					ok(pt.y === 2, 'y is 2');
+					ok(pt.pipX === 3, 'pipX is 3');
+					ok(pt.pipY === 4, 'pipY is 4');
+					
+					// exceed MAX_PIP
+					pt = new point(3, 4, point.MAX_PIP + 2, 0);
+					ok(pt.x === 4, 'x is 4');
+					ok(pt.y === 4, 'y is 4');
+					ok(pt.pipX === 2, 'pipX is 2');
+					ok(pt.pipY === 0, 'pipY is 0');
+					
+					pt = new point(3, 4, 0, point.MAX_PIP + 4);
+					ok(pt.x === 3, 'x is 3');
+					ok(pt.y === 5, 'y is 5');
+					ok(pt.pipX === 0, 'pipX is 0');
+					ok(pt.pipY === 4, 'pipY is 4');
+					
+					pt = new point(0, 0, -point.MAX_PIP, -point.MAX_PIP);
+					ok(pt.x === -1, 'x is -1');
+					ok(pt.y === -1, 'y is - 1');
+					ok(pt.pipX === 0, 'pipX is 0');
+					ok(pt.pipY === 0, 'pipY is 0');
+					
+					pt = new point(0, 0, -1, 0);
+					ok(pt.x === 0, 'x is 0');
+					ok(pt.y === 0, 'y is 0');
+					ok(pt.pipX === -1, 'pipX is -1');
+					ok(pt.pipY === 0, 'pipY is 0');
+				});
+				
+				test('add bases', function() {
+					var pt1 = new point(3, 5);
+					var pt2 = new point(1, -1);
+					var pt3 = point.add(pt1, pt2);
+					ok(pt3.x === 4, 'x should be 4');
+					ok(pt3.y === 4, 'y should be 4');
+					ok(pt3.pipX === 0, 'pipX should be 0');
+					ok(pt3.pipY === 0, 'pipY should be 0');
+				});
+				
+				test('add pips', function() {
+					ok(point.MAX_PIP === 16, 'if not 16, this test breaks');
+					var pt1 = new point(3, 5, 6, 7);
+					var pt2 = new point(1, -1, 4, 9);
+					var pt3 = point.add(pt1, pt2);
+					ok(pt3.x === 4, 'x is 4');
+					ok(pt3.y === 5, 'y is 5');
+					ok(pt3.pipX === 10, 'pipX is 10');
+					ok(pt3.pipY === 0, 'pipY is 0');
+					
+					pt1 = new point(1, 1, 0, 0);
+					pt2 = new point(0, 0, -8, -8);
+					pt3 = point.add(pt1, pt2);
+					ok(pt3.x === 0, 'x is 0');
+					ok(pt3.y === 0, 'y is 0');
+					ok(pt3.pipX === 8, 'pipX is 8');
+					ok(pt3.pipY === 8 , 'pipY is 8');
+				});
+				
+				test('add negative pips', function() {
+					ok(point.MAX_PIP === 16, 'if not 16, this test breaks');
+					var pt1 = new point(2, 2);
+					var pt2 = new point(0, 0, -2, 0);
+					var pt3 = point.add(pt1, pt2);
+					console.log(pt3);
+					ok(pt3.x === 1, 'x is 1');
+					ok(pt3.y === 2, 'y is 2');
+					ok(pt3.pipX === 14, 'pipX is 14');
+					ok(pt3.pipY === 0, 'pipY is 0');
+				});
+				
+				test('getHash', function() {
+					var pt1 = new point(4, 5);
+					ok(typeof(pt1.getHash) === 'function', 'should be getHash function');
+					ok(pt1.getHash() === '4_5', 'should hash out to expected value');
+				});
+				
+				test('fromHash', function() {
+					ok(typeof(point.fromHash) === 'function', 'fromHash should be function');
+					try {
+						point.fromHash(null);
+						ok(false, 'should have thrown on null');
+					}
+					catch (error) {
+						ok(true, 'threw on null');
+					}
+					try {
+						point.fromHash("3_x");
+						ok(false, 'should have thrown on invalid hash value');
+					}
+					catch (error) {
+						ok(true, 'threw on invalid hash value');
+					}
+					try {
+						point.fromHash("3_4_5");
+						ok(false, 'should have thrown on too many _');
+					}
+					catch (error) {
+						ok(true, 'threw on too many _s');
+					}
+					var pt1 = point.fromHash("3_4");
+					ok(pt1.x === 3 && pt1.y === 4, 'should have come out (3,4)');
+				});
+				
+				test('round', function() {
+					var pt1 = new point(3, 3, 0, 0);
+					var roundedPt1 = point.round(pt1);
+					ok(point.equals(pt1, roundedPt1), '(3,3,0,0) rounded up is equal to itself');
+					
+					pt1 = new point(3, 3, 1, 0);
+					roundedPt1 = point.round(pt1);
+					ok(roundedPt1.x === 4 && roundedPt1.y === 3, 'rounded up to (4,3)');
+					
+					pt1 = new point(3, 3, 0, 1);
+					roundedPt1 = point.round(pt1);
+					ok(roundedPt1.x === 3 && roundedPt1.y === 4, 'rounded up to (3, 4)');
+				});
+				
+				test('equals', function() {
+					ok(point.equals(new point(3, 4), new point(3, 4)), '(3,4) and (3,4) are equal');
+					ok(point.equals(new point(3, 4, 5, 6), new point(3, 4, 5, 6)), 'takes into account pips');
+				});
+
+			});
+		</script>
+		<h1>point Test</h1>
+        <h2 id="banner"></h2>
+        <ol id="tests"></ol>
+        <div id="results"></div>
+        <div id="main"></div>
+	</body>
+</html>
