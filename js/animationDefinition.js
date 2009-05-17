@@ -27,6 +27,6 @@ var animationDefinition = function(args) {
         };
         defaults['index'] = this.frames.length;
         var newFrame = $.extend(defaults, frameObj);
-        this.frames[this.frames.length] = newFrame;
+        this.frames.push(newFrame);
     }
 }

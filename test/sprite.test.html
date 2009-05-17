@@ -13,41 +13,67 @@
 			$(document).ready(function() {
 				module('sprite');
 				
-				test('namespaces', function() {
-					ok(typeof(window.sprite) !== 'undefined', 'window.sprite');
-				});
-				
 				test('ctor', function() {
-					var canvasElem = $('#testCanvas')[0];
+					ok(typeof(sprite) === 'function', 'exists');
+					var spriteElem = $('#testSprite')[0];
 					var active = {};
-					
+					var draw = function() {}
 					try {
-						new sprite(null, canvasElem);
+						new sprite();
+						ok(false, 'sprite has all kinds of required arguments');
+					}
+					catch (error) {
+						ok(true, 'sprite has all kinds of required arguments');
+					}
+					try {
+						new sprite(null, spriteElem, draw);
 						ok(false, 'null active');
 					}
 					catch (error) {
 						ok(true, 'null active');
 					}
 					try {
-						new sprite(active, null);
+						new sprite(active, null, draw);
 						ok(false, 'null canvas');
 					}
 					catch (error) {
 						ok(true, 'null canvas');
 					}
 					try {
-						new sprite(active, $('#banner')[0]);
-						ok(false, 'must be canvas');
+						new sprite(active, spriteElem);
+						ok(false, 'draw is required');
 					}
 					catch (error) {
-						ok(true, 'must be canvas');
+						ok(true, 'draw is required');
 					}
-					var sprite1 = new sprite(active, canvasElem);
-					ok(sprite1.active === active, 'active');
-					ok(sprite1.canvasElem === canvasElem, 'canvasElem');
-					ok(sprite1.canvasWidth === 20, 'canvasWidth');
-					ok(sprite1.canvasHeight === 10, 'canvasHeight');
-					ok(typeof(sprite1.draw) === 'function', 'draw is a function');
+					try {
+						new sprite(active, spriteElem, null);
+						ok(false, 'draw cannot be null');
+					}
+					catch (error) {
+						ok(true, 'draw cannot be null');
+					}
+					var s = new sprite(active, spriteElem, draw);
+					ok(s.active === active, 'active');
+					ok(s.spriteElem === spriteElem, 'spriteElem');
+					ok(s.draw === draw, 'draw');
+				});
+				
+				test('update', function() {
+					var spriteElem = $('#testSprite')[0];
+					var active = {};
+					active['position'] = new point(100, 200);
+					var drawCalled = false;
+					var draw = function(elem) {
+						drawCalled = true;
+						ok(elem === spriteElem, 'passed-in elem is the sprite element');
+					}
+					var s = new sprite(active, spriteElem, draw);
+					ok(typeof(s.update) === 'function', 'update exists');
+					s.update();
+					ok($(spriteElem).attr('top') === '200px', 'update sets top');
+					ok($(spriteElem).attr('left') === '100px', 'update sets left');
+					ok(drawCalled, 'called the passed-in draw method');
 				});
 			});
 		</script>
@@ -56,8 +82,8 @@
         <ol id="tests"></ol>
         <div id="results"></div>
         <div id="main"></div>
-		<div id="canvases">
-			<canvas id="testCanvas" width="20" height="10"></canvas>
+		<div id="sprites">
+			<div id="testSprite"></div>
 		</div>
 	</body>
 </html>

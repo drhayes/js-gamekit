@@ -1,0 +1,174 @@
+<html>
+	<head>
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+		<title>spriteManager</title>
+		<script src="../lib/jquery/jquery-1.3.1.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="testrunner.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/point.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/eventer.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/sprite.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../js/spriteManager.js" type="text/javascript" charset="utf-8"></script>
+		<link rel="stylesheet" href="testsuite.css" type="text/css" media="screen" title="no title" charset="utf-8">
+		<script type="text/html" id="spriteTemplate">
+			<div class="attackWordSprite"></div>
+		</script>
+	</head>
+	<body id="spriteManager">
+		<script type="text/javascript" charset="utf-8">
+			$(document).ready(function() {
+				module('spriteManager');
+				
+				test('ctor', function() {
+					ok(typeof(spriteManager) === 'function', 'exists');
+					var controller = new function() {
+						this.eventer = new eventer();
+					};
+					var drawMaker = function() {
+						return function() {
+							return 'blah!';
+						}
+					}
+					try {
+						new spriteManager();
+						ok(false, 'spriteManager needs arguments');
+					}
+					catch (error) {
+						ok(true, 'spriteManager needs arguments');
+					}
+					try {
+						new spriteManager(null, '#spriteTemplate', controller, drawMaker);
+						ok(false, 'requires id of screen to add sprites to');
+					}
+					catch (error) {
+						ok(true, 'requires id of screen to add sprites to');
+					}
+					try {
+						new spriteManager('#screen', null, controller, drawMaker);
+						ok(false, 'requires id of sprite template');
+					}
+					catch (error) {
+						ok(true, 'requires id of sprite template');
+					}
+					try {
+						new spriteManager('#screen', '#spriteTemplate', null, drawMaker);
+						ok(false, 'controller is required');
+					}
+					catch (error) {
+						ok(true, 'controller is required');
+					}
+					try {
+						new spriteManager('#screen', '#spriteTemplate', controller);
+						ok(false, 'drawMaker required');
+					}
+					catch (error) {
+						ok(true, 'drawMaker required');
+					}
+					try {
+						new spriteManager('#screen', '#spriteTemplate', controller, null);
+						ok(false, 'drawMaker cannot be null');
+					}
+					catch (error) {
+						ok(true, 'drawMaker cannot be null');
+					}
+					try {
+						new spriteManager('#blahdyblah', '#spriteTemplate', controller, drawMaker);
+						ok(false, 'screen element must exist');
+					}
+					catch (error) {
+						ok(true, 'screen element must exist');
+					}
+					try {
+						new spriteManager('#screen', '#blahdyblah', controller, drawMaker);
+						ok(false, 'sprite template element must exist');
+					}
+					catch (error) {
+						ok(true, 'sprite template element must exist');
+					}
+					try {
+						new spriteManager('#screen', '#spriteTemplate', {}, drawMaker);
+						ok(false, 'controller must be object with eventer');
+					}
+					catch (error) {
+						ok(true, 'controller must be object with eventer');
+					}
+					var sm = new spriteManager('#screen', '#spriteTemplate', controller, drawMaker);
+					ok(typeof(sm.update) === 'function', 'update function exists');
+				})
+				
+				test('active events', function() {
+					var controller = new function() {
+						this.eventer = new eventer();
+					};
+					var drawMaker = function() {
+						return function() {
+							return 'blah!';
+						}
+					}
+					var testActive = {
+						position: new point(100, 200),
+						update: function() {}
+					}
+					var sm = new spriteManager('#screen', '#spriteTemplate', controller, drawMaker);
+					// fire the "controller's" eventer and pass our testActive object...
+					// an HTML element (hopefully controller by a sprite object) should appear
+					// inside the #screen element
+					ok($('#screen').children().length === 0, 'should have no children to start with');
+					ok(sm.sprites.length === 0, 'should have no sprites in array');
+					controller.eventer.fire('activeAdded', { active: testActive });
+					ok(sm.sprites.length === 1, 'should have a sprite in array');
+					ok($('#screen').children().length === 1, 'should have one child now');
+					var spriteElem = $('#screen').children()[0];
+					// sprite template looks like: <div class="attackWordSprite"></div>
+					ok($(spriteElem).hasClass('attackWordSprite'), 'should have class .attackWordSprite like in template');
+					// position isn't set until we call update
+					ok($(spriteElem).attr('top') === undefined, 'top is not set');
+					ok($(spriteElem).attr('left') === undefined, 'left is not set');
+					// when we call update, should set this element's position to the active's position
+					sm.update();
+					ok($(spriteElem).attr('top') === '200px', 'top is set');
+					ok($(spriteElem).attr('left') === '100px', 'left is set');
+					
+					// now fire the removed event
+					controller.eventer.fire('activeRemoved', { active: testActive });
+					ok(sm.sprites.length === 0, 'should have no sprites in array again');
+					ok($('#screen').children().length === 0, 'should have no children now');
+				});
+				
+				test('drawMaker test', function() {
+					expect(2);
+					// replace the sprite ctor with our dummy to make sure the spriteManager
+					// is really passing in the right stuff
+					var ourSprite = {
+						update: function() {}
+					};
+					var controller = new function() {
+						this.eventer = new eventer();
+					};
+					var testDraw = function() {}
+					var testActive = {
+						position: new point(100, 200),
+						update: function() {}
+					}
+					var drawMaker = function(drawMe) {
+						ok(drawMe === testActive, 'passed in the right active');
+						return testDraw;
+					}
+					window.sprite = function(active, spriteElem, draw) {
+						ok(testDraw === draw, 'passed in the right draw function');
+						return ourSprite;
+					}
+					var sm = new spriteManager('#screen', '#spriteTemplate', controller, drawMaker);
+					// fire event to get our active added and our sprite constructed
+					controller.eventer.fire('activeAdded', { active: testActive });
+					sm.update();
+				});		
+			});
+		</script>
+		<h1>spriteManager Test</h1>
+        <h2 id="banner"></h2>
+        <ol id="tests"></ol>
+        <div id="results"></div>
+        <div id="main"></div>
+		<div id="screen" style="position: relative;"></div>
+	</body>
+</html>
